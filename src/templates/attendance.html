@@ -1,0 +1,95 @@
+<!-- templates/attendance.html - 출석 기록 페이지 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출석 기록 - 얼굴 인식 출석 체크</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">얼굴 인식 출석 체크</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">홈</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">대시보드</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/students">학생 관리</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/attendance">출석 기록</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h2 class="mt-4">출석 기록</h2>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5>{{ current_date }} 출석 기록</h5>
+                    </div>
+                    <div class="col-auto">
+                        <form class="d-flex" action="{{ url_for('view_attendance') }}" method="get">
+                            <input type="date" class="form-control me-2" name="date" value="{{ current_date }}">
+                            <button class="btn btn-outline-primary" type="submit">조회</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if records %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>학번</th>
+                            <th>이름</th>
+                            <th>날짜</th>
+                            <th>출석 시간</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td>{{ record.student_id }}</td>
+                            <td>{{ record.name }}</td>
+                            <td>{{ record.date }}</td>
+                            <td>{{ record.time }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="alert alert-info">
+                    선택한 날짜({{ current_date }})의 출석 기록이 없습니다.
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary">대시보드로 이동</a>
+            </div>
+        </div>
+    </main>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

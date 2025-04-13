@@ -1,0 +1,166 @@
+<!-- templates/capture_face.html - 얼굴 캡처 페이지 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>얼굴 캡처 - 얼굴 인식 출석 체크</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 3rem;
+        }
+        #video {
+            width: 100%;
+            max-width: 640px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">얼굴 인식 출석 체크</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">홈</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">대시보드</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/students">학생 관리</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/attendance">출석 기록</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h2 class="mt-4">얼굴 캡처</h2>
+        <p class="lead">{{ student.name }} ({{ student.student_id }})의 얼굴을 캡처합니다.</p>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>카메라</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <video id="video" autoplay playsinline></video>
+                        <canvas id="canvas"></canvas>
+                        <div class="alert alert-info mt-3" id="status">카메라 접근 대기 중...</div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-grid gap-2">
+                            <button id="captureBtn" class="btn btn-primary" disabled>얼굴 캡처</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>안내</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>좋은 인식 결과를 위한 팁:</p>
+                        <ul>
+                            <li>얼굴이 화면 중앙에 오도록 합니다.</li>
+                            <li>밝은 조명 아래에서 촬영합니다.</li>
+                            <li>다양한 각도에서 여러 장의 사진을 촬영합니다.</li>
+                            <li>안경을 착용하는 경우, 착용한 상태와 벗은 상태 모두 촬영하세요.</li>
+                        </ul>
+                        <div id="captureCount" class="alert alert-success">
+                            캡처된 얼굴: <span id="count">0</span>개
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('manage_students') }}" class="btn btn-secondary">완료</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const status = document.getElementById('status');
+        const countElement = document.getElementById('count');
+
+        let count = 0;
+
+        // 카메라 접근
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                status.textContent = '카메라가 준비되었습니다. 얼굴을 정면으로 비춘 후 캡처하세요.';
+                status.className = 'alert alert-success mt-3';
+                captureBtn.disabled = false;
+            } catch (err) {
+                status.textContent = '카메라 접근 오류: ' + err.message;
+                status.className = 'alert alert-danger mt-3';
+            }
+        }
+
+        // 얼굴 캡처
+        captureBtn.addEventListener('click', function() {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Base64 이미지 데이터 생성
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            // 서버로 전송
+            fetch('{{ url_for("capture_face", student_id=student.student_id) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'image_data=' + encodeURIComponent(imageData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    count += data.faces_detected;
+                    countElement.textContent = count;
+
+                    status.textContent = `성공! ${data.faces_detected}개의 얼굴이 감지되어 저장되었습니다.`;
+                    status.className = 'alert alert-success mt-3';
+                } else {
+                    status.textContent = '오류: ' + data.message;
+                    status.className = 'alert alert-danger mt-3';
+                }
+            })
+            .catch(err => {
+                status.textContent = '서버 오류: ' + err.message;
+                status.className = 'alert alert-danger mt-3';
+            });
+        });
+
+        // 페이지 로드 시 카메라 시작
+        window.addEventListener('load', startCamera);
+    </script>
+</body>
+</html>
+
