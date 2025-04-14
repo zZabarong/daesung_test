@@ -1,0 +1,9 @@
+src/students_database
+src/attendance.db
+src/static
+
+.env
+example.env
+*.env
+.idea
+src/__pycache__
