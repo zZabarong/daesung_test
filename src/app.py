@@ -1,5 +1,3 @@
-# app.py - 메인 Flask 애플리케이션
-
 from flask import Flask, render_template, request, redirect, url_for, jsonify, Response
 import cv2
 import numpy as np
